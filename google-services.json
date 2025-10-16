@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "978859366763",
+    "project_id": "login-a7415",
+    "storage_bucket": "login-a7415.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:978859366763:android:f0ab1c4ee52b4b26ec542e",
+        "android_client_info": {
+          "package_name": "com.aashika.aetheraqi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDclGCtyKoqD7GHqnoi-7aKbmTS7RKJlC8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
