@@ -1,5 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+
 
 export default function TabLayout() {
   return (
@@ -27,15 +28,16 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="routes"
+            <Tabs.Screen
+        name="community-drives" // should match app/community-drives.tsx
         options={{
-          title: '🛣️ Routes',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'map' : 'map-outline'} size={28} color={color} />
+          title: 'Community',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="account-group" color={color} size={size ?? 28} />
           ),
         }}
       />
+     
       <Tabs.Screen
         name="tree"
         options={{
@@ -51,6 +53,15 @@ export default function TabLayout() {
           title: '🏆 Challenges',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'trophy' : 'trophy-outline'} size={28} color={color} />
+          ),
+        }}
+      />
+       <Tabs.Screen
+        name="routes"
+        options={{
+          title: '🛣️ Routes',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'map' : 'map-outline'} size={28} color={color} />
           ),
         }}
       />

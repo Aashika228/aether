@@ -5,19 +5,15 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAppContext } from '../../src/contexts/AppContext';
 import { useAuth } from '../../src/contexts/AuthContext';
+import AirSphere from './AirSphere';
 
+const MAX_POINTS = 100;
+
+// Example global API key for air quality. Replace with your own as needed!
 const AQI_API_KEY = 'bf11bc7f23f3ed1478721601f35290d0';
 
-async function fetchAQIData(lat: number, lon: number) {
-  const url = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${AQI_API_KEY}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Failed to fetch AQI');
-  const data = await res.json();
-  return { aqi: data.list[0].main.aqi };
-}
-
 const AQI_LABELS = ['Good', 'Fair', 'Moderate', 'Poor', 'Very Poor'];
-const AQI_COLORS = ['#49b86a', '#aacb37', '#fff692', '#ffbb54', '#ff6289'];
+const AQI_COLORS = ['#49b86a', '#aacb37', '#ffeb3b', '#ff9800', '#f44336'];
 const MOTIVATION_QUOTES = [
   "One small action can change the world! 🌎",
   "Breathe easy, live green!",
@@ -33,15 +29,42 @@ const ECO_FACTS = [
   "Caring for trees cools down entire neighborhoods!",
 ];
 
+// --------------- LEADERBOARD SAMPLE USERS ---------------
+// Replace this array with data from your backend/context for real users
+const sampleUsers = [
+  { id: 1, name: "Alex", points: 180 },
+  { id: 2, name: "Jamie", points: 120 },
+  { id: 3, name: "Priya", points: 105 },
+  { id: 4, name: "Sara", points: 70 },
+];
+
+async function fetchAQIData(lat: number, lon: number) {
+  const url = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${AQI_API_KEY}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch AQI');
+  const data = await res.json();
+  return { aqi: data.list[0].main.aqi };
+}
+
 export default function DashboardScreen() {
-  const { logout } = useAuth();
   const { state, dispatch } = useAppContext();
+  const { logout } = useAuth();
   const [aqi, setAqi] = useState<number | null>(null);
   const [aqiStatus, setAqiStatus] = useState<string>('Loading...');
   const [loading, setLoading] = useState(true);
   const [fact, setFact] = useState('');
   const [quote, setQuote] = useState('');
   const [spinning, setSpinning] = useState(false);
+
+  // Add your own user to the users array for the leaderboard
+  const users = [
+    ...sampleUsers,
+    { id: 99, name: state.user.name, points: state.user.points }
+  ]
+    // Remove possible duplicates for live reload or if you test as user "Alex"
+    .filter(
+      (u, i, self) => self.findIndex(v => v.name === u.name) === i
+    );
 
   useEffect(() => {
     setFact(ECO_FACTS[Math.floor(Math.random() * ECO_FACTS.length)]);
@@ -85,12 +108,11 @@ export default function DashboardScreen() {
     }, 1250);
   }
 
-  // Responsive color for AQI
   const aqiColor = typeof aqi === "number" ? AQI_COLORS[aqi - 1] : '#4CAF50';
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#f5fff7' }} contentContainerStyle={{ paddingBottom: 46 }}>
-      {/* Header Bar */}
+      {/* HEADER BAR */}
       <LinearGradient colors={['#43b480', '#8fd9ef']} style={styles.headerBar}>
         <View style={styles.headerRow}>
           <MaterialCommunityIcons name="leaf" size={32} color="#fff" style={{ marginRight: 10 }} />
@@ -98,7 +120,7 @@ export default function DashboardScreen() {
         </View>
       </LinearGradient>
 
-      {/* Welcome / Facts Card */}
+      {/* FACTS + QUOTE CARD */}
       <LinearGradient colors={['#c3f5d4', '#eaf2fc']} style={styles.topCard}>
         <Text style={styles.greeting}>
           <MaterialCommunityIcons name="sprout" size={22} /> Hi, {state.user.name}!
@@ -107,7 +129,7 @@ export default function DashboardScreen() {
         <Text style={styles.fact}>{fact}</Text>
       </LinearGradient>
 
-      {/* AQI Section */}
+      {/* AIR QUALITY SECTION */}
       <View style={styles.section}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <MaterialCommunityIcons name="air-filter" size={26} color={aqiColor} style={{ marginRight: 7 }} />
@@ -119,8 +141,14 @@ export default function DashboardScreen() {
           <Text style={[styles.aqiText, { color: aqiColor }]}>{aqiStatus}</Text>
         )}
       </View>
+      {/* AIR QUALITY VISUALIZER */}
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>Air Quality Visualizer</Text>
+        <AirSphere aqi={aqi || 1} />
+      </View>
 
-      {/* Progress Section */}
+
+      {/* PROGRESS/POINTS BAR */}
       <View style={styles.section}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <MaterialCommunityIcons name="star-circle" size={26} color="#ffe066" style={{ marginRight: 7 }} />
@@ -135,8 +163,10 @@ export default function DashboardScreen() {
             colors={['#ffdb58', '#43b480']}
             start={[0, 0]}
             end={[1, 0]}
-            style={[styles.progressBar, { width: `${Math.min(state.user.points / 12, 100)}%` }]}
-          />
+            style={[styles.progressBar, 
+            { width: `${Math.min((state.user.points / MAX_POINTS) * 100, 100)}%` }       
+            ]}
+            />
         </View>
         <Text style={styles.label}>Eco Level {state.user.level}</Text>
         <View style={styles.progressBarBg}>
@@ -149,7 +179,24 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {/* Spin The Wheel */}
+      {/* LEADERBOARD SECTION */}
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>
+          <MaterialCommunityIcons name="podium-gold" size={22} color="#ffd700" /> Leaderboard
+        </Text>
+        {users
+          .sort((a, b) => b.points - a.points)
+          .slice(0, 5)
+          .map((u, idx) => (
+            <View key={u.id} style={[styles.leaderRow, u.name === state.user.name && styles.meRow]}>
+              <Text style={styles.rankTxt}>{idx + 1}.</Text>
+              <Text style={styles.userTxt}>{u.name === state.user.name ? "👑 You" : u.name}</Text>
+              <Text style={styles.pointsTxt}>{u.points} pts</Text>
+            </View>
+          ))}
+      </View>
+
+      {/* SPIN TO WIN */}
       <View style={styles.section}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <MaterialCommunityIcons name="dice-multiple" size={26} color="#49b86a" style={{ marginRight: 7 }} />
@@ -163,7 +210,7 @@ export default function DashboardScreen() {
         <Text style={{ color: '#888', fontSize: 15, marginTop: 2 }}>Try your luck for a bonus every day!</Text>
       </View>
 
-      {/* Challenges Overview */}
+      {/* CHALLENGES SECTION */}
       <View style={styles.section}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <MaterialCommunityIcons name="target" size={24} color="#50a7c2" style={{ marginRight: 7 }} />
@@ -177,7 +224,7 @@ export default function DashboardScreen() {
         ))}
       </View>
 
-      {/* Logout */}
+      {/* LOGOUT */}
       <View style={styles.section}>
         <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
           <MaterialCommunityIcons name="logout" size={20} color="#fff" style={{ marginRight: 6 }} />
@@ -190,39 +237,20 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   headerBar: {
-    paddingTop: 54,
-    paddingBottom: 20,
-    borderBottomRightRadius: 20,
-    borderBottomLeftRadius: 20,
-    marginBottom: 8,
-    elevation: 4,
-    alignItems: "center",
-    shadowColor: "#388e3c",
+    paddingTop: 54, paddingBottom: 20, borderBottomRightRadius: 20, borderBottomLeftRadius: 20,
+    marginBottom: 8, elevation: 4, alignItems: "center", shadowColor: "#388e3c"
   },
   headerRow: { flexDirection: 'row', alignItems: "center", justifyContent: "center" },
   header: { fontSize: 28, fontWeight: 'bold', color: "#fff", letterSpacing: 1.1 },
   topCard: {
-    alignItems: 'center',
-    margin: 16,
-    padding: 18,
-    borderRadius: 18,
-    elevation: 4,
-    shadowColor: '#43b480',
+    alignItems: 'center', margin: 16, padding: 18, borderRadius: 18, elevation: 4, shadowColor: '#43b480'
   },
   greeting: { fontSize: 22, color: '#43b480', fontWeight: '700', marginBottom: 2 },
   subline: { fontSize: 17, color: '#00897b', fontWeight: '500', marginTop: 2 },
   fact: { fontSize: 15, color: '#388E3C', textAlign: 'center', marginTop: 8, marginBottom: 2 },
   section: {
-    marginHorizontal: 16,
-    marginBottom: 14,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    elevation: 2,
-    shadowColor: '#888',
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 2 },
+    marginHorizontal: 16, marginBottom: 14, backgroundColor: '#fff', borderRadius: 12, padding: 15,
+    elevation: 2, shadowColor: '#888', shadowOpacity: 0.12, shadowRadius: 3, shadowOffset: { width: 0, height: 2 },
   },
   sectionHeader: { fontSize: 19, fontWeight: 'bold', color: '#388E3C', marginBottom: 5 },
   aqiText: { fontSize: 27, fontWeight: '700', marginVertical: 5 },
@@ -236,14 +264,20 @@ const styles = StyleSheet.create({
   progressBar: { height: '100%', borderRadius: 6 },
   label: { fontSize: 16, fontWeight: '600', color: '#3a6073', marginTop: 5 },
   spinBtn: {
-    backgroundColor: '#ffa928', borderRadius: 12, alignItems: 'center',
-    marginTop: 10, paddingHorizontal: 22, paddingVertical: 10,
-    flexDirection: 'row', justifyContent: "center"
+    backgroundColor: '#ffa928', borderRadius: 12, alignItems: 'center', marginTop: 10,
+    paddingHorizontal: 22, paddingVertical: 10, flexDirection: 'row', justifyContent: "center"
   },
   logoutBtn: {
-    flexDirection: "row",
-    backgroundColor: '#e57373', borderRadius: 12, alignItems: 'center',
-    justifyContent: "center",
-    paddingHorizontal: 30, paddingVertical: 12, marginTop: 6,
+    flexDirection: "row", backgroundColor: '#e57373', borderRadius: 12, alignItems: 'center',
+    justifyContent: "center", paddingHorizontal: 30, paddingVertical: 12, marginTop: 6,
   },
+  // --- Leaderboard ---
+  leaderRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingVertical: 7, borderBottomWidth: 0.5, borderColor: "#e0e0e0"
+  },
+  meRow: { backgroundColor: "#e3ffe5", borderRadius: 7 },
+  rankTxt: { fontSize: 16, width: 28, fontWeight: "bold", color: "#43b480" },
+  userTxt: { fontSize: 16, flex: 1, fontWeight: "bold" },
+  pointsTxt: { fontSize: 15, fontWeight: "600", color: "#388E3C" },
 });
